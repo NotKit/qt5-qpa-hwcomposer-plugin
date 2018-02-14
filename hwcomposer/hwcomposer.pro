@@ -33,6 +33,18 @@ QT += core-private gui-private egl_support-private fontdatabase_support-private 
 DEFINES += QEGL_EXTRA_DEBUG
 CONFIG += egl qpa/genericunixfontdatabase
 
+enable-qcom-bsp {
+    DEFINES += QCOM_BSP
+}
+
+enable-qti-bsp {
+    DEFINES += QTI_BSP
+}
+
+enable-qcom-hardware {
+    DEFINES += QCOM_HARDWARE
+}
+
 CONFIG += link_pkgconfig
 
 # For linking against libQt5PlatformSupport.a

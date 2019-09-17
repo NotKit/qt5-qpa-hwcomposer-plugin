@@ -104,37 +104,43 @@ HwComposerBackend::create()
     }
 
     // Open hardware composer
-    HWC_PLUGIN_ASSERT_ZERO(hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)));
+    uint32_t version = 0;
+    if (hw_get_module(HWC_HARDWARE_MODULE_ID, (const hw_module_t **)(&hwc_module)) == 0) {
+        fprintf(stderr, "== hwcomposer module ==\n");
+        fprintf(stderr, " * Address: %p\n", hwc_module);
+        fprintf(stderr, " * Module API Version: %x\n", hwc_module->module_api_version);
+        fprintf(stderr, " * HAL API Version: %x\n", hwc_module->hal_api_version); /* should be zero */
+        fprintf(stderr, " * Identifier: %s\n", hwc_module->id);
+        fprintf(stderr, " * Name: %s\n", hwc_module->name);
+        fprintf(stderr, " * Author: %s\n", hwc_module->author);
+        fprintf(stderr, "== hwcomposer module ==\n");
 
-    fprintf(stderr, "== hwcomposer module ==\n");
-    fprintf(stderr, " * Address: %p\n", hwc_module);
-    fprintf(stderr, " * Module API Version: %x\n", hwc_module->module_api_version);
-    fprintf(stderr, " * HAL API Version: %x\n", hwc_module->hal_api_version); /* should be zero */
-    fprintf(stderr, " * Identifier: %s\n", hwc_module->id);
-    fprintf(stderr, " * Name: %s\n", hwc_module->name);
-    fprintf(stderr, " * Author: %s\n", hwc_module->author);
-    fprintf(stderr, "== hwcomposer module ==\n");
+        // Open hardware composer device
+        HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
 
-    // Open hardware composer device
-    HWC_PLUGIN_ASSERT_ZERO(hwc_module->methods->open(hwc_module, HWC_HARDWARE_COMPOSER, &hwc_device));
+        version = interpreted_version(hwc_device);
 
-    uint32_t version = interpreted_version(hwc_device);
-
-    fprintf(stderr, "== hwcomposer device ==\n");
-    fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
-    fprintf(stderr, " * Module: %p\n", hwc_device->module);
-    fprintf(stderr, "== hwcomposer device ==\n");
+        fprintf(stderr, "== hwcomposer device ==\n");
+        fprintf(stderr, " * Version: %x (interpreted as %x)\n", hwc_device->version, version);
+        fprintf(stderr, " * Module: %p\n", hwc_device->module);
+        fprintf(stderr, "== hwcomposer device ==\n");
 
 #ifdef HWC_DEVICE_API_VERSION_0_1
-    // Special-case for old hw adaptations that have the version encoded in
-    // legacy format, we have to check hwc_device->version directly, because
-    // the constants are actually encoded in the old format
-    if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
-        (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
-        (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
-        return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
-    }
+        // Special-case for old hw adaptations that have the version encoded in
+        // legacy format, we have to check hwc_device->version directly, because
+        // the constants are actually encoded in the old format
+        if ((hwc_device->version == HWC_DEVICE_API_VERSION_0_1) ||
+            (hwc_device->version == HWC_DEVICE_API_VERSION_0_2) ||
+            (hwc_device->version == HWC_DEVICE_API_VERSION_0_3)) {
+            return new HwComposerBackend_v0(hwc_module, hwc_device, libminisf);
+        }
 #endif
+    } else {
+#ifdef HWC_PLUGIN_HAVE_HWCOMPOSER2_API
+        fprintf(stderr, "Unable to open HWComposer HAL module, assuming HWComposer 2.0\n");
+        version = HWC_DEVICE_API_VERSION_2_0;
+#endif
+    }
 
     // Determine which backend we use based on the supported module API version
     switch (version) {

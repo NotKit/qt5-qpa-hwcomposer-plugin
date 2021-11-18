@@ -413,7 +413,9 @@ int HwComposerBackend_v11::getSingleAttribute(uint32_t attribute)
 #ifdef HWC_DEVICE_API_VERSION_1_4
     else {
         /* 1.4 or higher */
-        config = hwc_device->getActiveConfig(hwc_device, 0);
+        // config = hwc_device->getActiveConfig(hwc_device, 0);
+        size_t numConfigs = 1;
+        hwc_device->getDisplayConfigs(hwc_device, 0, &config, &numConfigs);
     }
 #endif
 
